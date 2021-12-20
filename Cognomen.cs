@@ -61,7 +61,7 @@ namespace SeelingCat.Cognomen
 
 		public const string pluginGuid = "seelingcat.humankind.cognomen";
 		public const string pluginName = "Cognomen";
-		public const string pluginVersion = "1.0.0.0";
+		public const string pluginVersion = "1.0.0.1";
 
 		void Awake()
 		{
@@ -454,7 +454,7 @@ namespace SeelingCat.Cognomen
 			}
 			public bool IsFascist()
 			{
-				return (Authority >= minAxisLevel && Collectivism >= minAxisLevel);
+				return (Authority >= minAxisLevel && Individualism >= minAxisLevel);
 			}
 
 			public void GenerateNames(string empireAdjective, EmpireSize empireSize, string avatarName, Gender avatarGender)
