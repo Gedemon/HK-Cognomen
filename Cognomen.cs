@@ -61,7 +61,7 @@ namespace SeelingCat.Cognomen
 
 		public const string pluginGuid = "seelingcat.humankind.cognomen";
 		public const string pluginName = "Cognomen";
-		public const string pluginVersion = "1.0.0.1";
+		public const string pluginVersion = "1.0.0.2";
 
 		void Awake()
 		{
@@ -182,7 +182,7 @@ namespace SeelingCat.Cognomen
 
 				if (!isAnonymous)
 				{
-					__result = Amplitude.Mercury.Sandbox.Sandbox.EmpireNamesRepository.GetColorizedName(empireName, color);
+					__result = color == string.Empty ? empireName : Amplitude.Mercury.Sandbox.Sandbox.EmpireNamesRepository.GetColorizedName(empireName, color);
 					return false;
 				}
 
