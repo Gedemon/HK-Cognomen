@@ -11,6 +11,7 @@ using Amplitude.Mercury.Avatar;
 using Amplitude.Mercury.Data.GameOptions;
 using Amplitude.Mercury.Data.Simulation;
 using Amplitude.Mercury.Interop;
+using Amplitude.Mercury.Presentation;
 using Amplitude.Mercury.Simulation;
 using Amplitude.Mercury.UI;
 using BepInEx;
@@ -61,7 +62,7 @@ namespace SeelingCat.Cognomen
 
 		public const string pluginGuid = "seelingcat.humankind.cognomen";
 		public const string pluginName = "Cognomen";
-		public const string pluginVersion = "1.0.0.2";
+		public const string pluginVersion = "1.0.0.3";
 
 		void Awake()
 		{
@@ -399,6 +400,53 @@ namespace SeelingCat.Cognomen
 		}
 		//*/
 
+		// This flag is used to check if the avatars are loaded (before trying to set custom names)
+		public static bool isPresentationStarted = false;
+
+		// We update the above flag after the PresentationAvatarController method Dostart and DoShutdown are called
+		//*
+		[HarmonyPatch(typeof(PresentationAvatarController))]
+		public class PresentationAvatarController_Patch
+		{
+			[HarmonyPatch("DoStart")]
+			[HarmonyPostfix]
+			public static void DoStart()
+			{
+				isPresentationStarted = true;
+				Diagnostics.LogWarning($"[SeelingCat] [PresentationAvatarController] DoStart: isPresentationStarted = {isPresentationStarted}");
+			}
+
+			[HarmonyPatch("DoShutdown")]
+			[HarmonyPostfix]
+			public static void DoShutdown()
+			{
+				isPresentationStarted = false;
+				Diagnostics.LogWarning($"[SeelingCat] [PresentationAvatarController] DoShutdown: isPresentationStarted = {isPresentationStarted}");
+			}
+		}
+		//*/
+
+		// Compatibility fix for games with more than 10 player slots, as the slots above 10 may not have an Avatarsummary set when TryGetGender is called
+		//*
+		[HarmonyPatch(typeof(AvatarManager))]
+		public class AvatarManager_Patch
+		{
+			[HarmonyPatch("TryGetGender")]
+			[HarmonyPrefix]
+			public static bool TryGetGender(AvatarManager __instance, ref bool __result, AvatarSummary avatarSummary, out Gender gender)
+			{
+				gender = Gender.Male;
+				if (avatarSummary.ElementKeyBySlots.Length == 0)
+				{
+					__result = false;
+					return false;
+				}
+				return true;
+			}
+
+		}
+		//*/
+
 		#endregion
 
 		#region Custom Naming
@@ -409,6 +457,17 @@ namespace SeelingCat.Cognomen
 		public static string[] FullEmpireNamePerEmpireIndex;
 		public static string[] LongEmpireNamePerEmpireIndex;
 		public static string[] FullAvatarNamePerEmpireIndex;
+
+		// Hardcoded fix for DLC adjectives (to do: DB update and localization...)
+		public static IDictionary<string, string> EmpireAdjectivesDLC = new Dictionary<string, string>
+			{
+				{"Civilization_Era1_Bantu", "Bantu" },
+				{"Civilization_Era2_Garamantes", "Garamantes" },
+				{"Civilization_Era3_Swahili", "Swahili" },
+				{"Civilization_Era4_Maasai", "Maasai" },
+				{"Civilization_Era5_Ethiopia", "Ethiopian" },
+				{"Civilization_Era6_Nigeria", "Nigerian" },
+			};
 
 		// this class will be able to generate the names after we've given it the data on an Empire Governement/Politic/Size
 		public class EmpireGovernement
@@ -740,6 +799,12 @@ namespace SeelingCat.Cognomen
 		//
 		public static void SetCustomEmpireNames(EmpireNameInfo empireNameInfo, int empireIndex)
 		{
+			// Don't run if the Avatars summary are not all loaded yet
+			if(!isPresentationStarted)
+            {
+				return;
+            }
+
 			string empireName = empireNameInfo.EmpireRoughName;
 			string fullEmpireName = empireName;
 			string longEmpireName = empireName;
@@ -949,7 +1014,7 @@ namespace SeelingCat.Cognomen
 
 					// Preparing the Empire Full and long names
 					//
-					Diagnostics.LogWarning($"[SeelingCat] preparing the Empire Full and long names...");
+					Diagnostics.LogWarning($"[SeelingCat] preparing the Empire Full and long names for {majorEmpire.FactionDefinition.Name}");
 
 					// The UIMapper has the value from the DB, including the adjective not used in the base game 
 					FactionUIMapper empireUIMapper = Utils.DataUtils.GetUIMapper<FactionUIMapper>(majorEmpire.FactionDefinition.Name);
@@ -958,9 +1023,15 @@ namespace SeelingCat.Cognomen
 					string empirePostfix = string.Empty;
 					string empireAdjective = Utils.TextUtils.Localize(empireUIMapper.Adjective);
 
+					// If a DLC adjective exists in the hardcoded dictionary and there is no trnaslation for the UIMapper adjective, use the hardcoded value...
+					if(EmpireAdjectivesDLC.TryGetValue(majorEmpire.FactionDefinition.Name.ToString(), out string adjectiveDLC) && empireAdjective == empireUIMapper.Adjective)
+                    {
+						empireAdjective = adjectiveDLC;
+					}
+
 					// We've filled the EmpireGovernement class with data earlier, we now use it to generate the names
 					//
-					Diagnostics.LogWarning($"[SeelingCat] generating names for empireAdjective = {empireAdjective}, empireSize = {empireSize}, personaName = {personaName}, gender = {gender}");
+					Diagnostics.LogWarning($"[SeelingCat] generating names for empireAdjective = {empireAdjective}/{empireUIMapper.Adjective}, empireSize = {empireSize}, personaName = {personaName}, gender = {gender}");
 					gov.GenerateNames(empireAdjective, empireSize, personaName, gender);
 
 					// Assigning the generated names
