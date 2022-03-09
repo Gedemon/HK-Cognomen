@@ -62,7 +62,7 @@ namespace SeelingCat.Cognomen
 
 		public const string pluginGuid = "seelingcat.humankind.cognomen";
 		public const string pluginName = "Cognomen";
-		public const string pluginVersion = "1.0.0.3";
+		public const string pluginVersion = "1.0.0.4";
 
 		void Awake()
 		{
@@ -566,6 +566,27 @@ namespace SeelingCat.Cognomen
 						EmpireFullName = empireAdjective + " Republic";
 					}
 				}
+				else if (DemocraticRepublic)
+				{
+					title = "President";
+
+					if (IsSocialist())
+					{
+						EmpireFullName = empireAdjective + " Democratic Socialist Republic";
+					}
+					else if (IsCommunist())
+					{
+						EmpireFullName = empireAdjective + " People's Democratic Republic";
+					}
+					else if (IsFascist())
+					{
+						EmpireFullName = empireAdjective + " Union";
+					}
+					else
+					{
+						EmpireFullName = empireAdjective + " Republic";
+					}
+				}
 				else if (OnePartyState)
 				{
 					title = "Chairman";
@@ -833,83 +854,96 @@ namespace SeelingCat.Cognomen
 						Civic civic = majorEmpire.DepartmentOfDevelopment.Civics[c];
                         if(civic.CivicStatus == CivicStatuses.Enacted)
 						{
-							Diagnostics.LogWarning($"[SeelingCat] - Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 							switch (civic.ActiveChoiceName.ToString())
                             {
 								// Founding Myths
 								case "Civics_Government01_Choice01": // Natural Right
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - NaturalRight : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.NaturalRight = true;
 										break;
 									}
 								case "Civics_Government01_Choice02": // Divine Mandate
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - DivineMandate : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DivineMandate = true;
 										break;
 									}
 								// Leadership
 								case "Civics_Government02_Choice01": // Small Council
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - SmallCouncil : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.SmallCouncil = true;
 										break;
 									}
 								case "Civics_Government02_Choice02": // Autarchy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Autarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Autarchy = true;
 										break;
 									}
 								//Political Entitlement
 								case "Civics_Government03_Choice01": // Aristocracy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Aristocracy = true;
 										break;
 									}
 								case "Civics_Government03_Choice02": // Republic
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Republic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Republic = true;
 										break;
 									}
 								// Political Influence
 								case "Civics_Government04_Choice01": // Monarchy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Monarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Monarchy = true;
 										break;
 									}
 								case "Civics_Government04_Choice02": // Aristocracy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Aristocracy = true;
 										break;
 									}
 								// Monarchy Power
 								case "Civics_Government05_Choice01": // Absolute Monarchy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - AbsoluteMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.AbsoluteMonarchy = true;
 										break;
 									}
 								case "Civics_Government05_Choice02": // Constitutional Monarchy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - ConstitutionalMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.ConstitutionalMonarchy = true;
 										break;
 									}
 								// Republic Evolution
 								case "Civics_Government06_Choice01": // One-Party State
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - OnePartyState : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.OnePartyState = true;
 										break;
 									}
 								case "Civics_Government06_Choice02": // Democratic Republic
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DemocraticRepublic = true;
 										break;
 									}
 								// Aristocracy Evolution
 								case "Civics_Government07_Choice01": // Oligarchy
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - Oligarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Oligarchy = true;
 										break;
 									}
 								case "Civics_Government07_Choice02": // Democratic Republic
 									{
+										Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DemocraticRepublic = true;
 										break;
 									}
@@ -1074,13 +1108,13 @@ namespace SeelingCat.Cognomen
 								}
 							case 5: // Industrial
 								{
-									empirePrefix = Utils.TextUtils.Localize(liegeUIMapper.Adjective);
+									empirePrefix = Utils.TextUtils.Localize(liegeUIMapper.Adjective)+" ";
 									empirePostfix = " Protectorate";
 									break;
 								}
 							case 6: // Contemporary
 								{
-									empirePrefix = Utils.TextUtils.Localize(liegeUIMapper.Adjective);
+									empirePrefix = Utils.TextUtils.Localize(liegeUIMapper.Adjective)+" ";
 									empirePostfix = " State";
 									break;
 								}
@@ -1210,5 +1244,45 @@ namespace SeelingCat.Cognomen
 		}
 
 		#endregion
+	}
+
+	// Thanks to (AOM)
+	[HarmonyPatch(typeof(NotificationsController))]
+	public class NotificationsController_Patch
+	{
+		[HarmonyPatch(nameof(Load))]
+		[HarmonyPostfix]
+		public static void Load()
+		{
+			for (int i = 0; i < NotificationsController.AllConfigs.Length; i++)
+			{
+				ref var cfg = ref NotificationsController.AllConfigs[i];
+
+				if (cfg.NotificationDataType == typeof(OtherFactionEvolutionNotification))
+				{
+					Diagnostics.LogError($"[SeelingCat] Replacing <GetDescription> in NotificationsController.AllConfigs for OtherFactionEvolutionNotification");
+
+					cfg.GetDescription = NotificationDataConfig.Forge(delegate (Notification<OtherFactionEvolutionNotification> notif, NotificationContext context)
+					{
+						MajorEmpire majorEmpire = Amplitude.Mercury.Sandbox.Sandbox.MajorEmpires[notif.Data.OtherEmpireIndex];
+
+						FactionDefinition factionDefinition = Utils.GameUtils.GetFactionDefinition(notif.Data.OtherFactionDefinitionName);
+						FactionDefinition factionDefinition2 = Utils.GameUtils.GetFactionDefinition(notif.Data.PreviousOtherFactionDefinitionName);
+						EraDefinition eraDefinition = majorEmpire.DepartmentOfDevelopment.GetCurrentEraDefinition();//factionDefinition.EraDefinition;
+						EraUIMapper uIMapper8 = Utils.DataUtils.GetUIMapper<EraUIMapper>(eraDefinition.Name);
+						string key4 = Utils.DataUtils.GetNotificationUIMapper<OtherFactionEvolutionNotification>().Description;
+						if (eraDefinition.EraIndex == 1)
+						{
+							key4 = "%OtherFactionEvolutionNotificationDescriptionEra0";
+						}
+						if (factionDefinition.Name == factionDefinition2.Name)
+						{
+							key4 = "%OtherFactionTranscendNotificationDescription";
+						}
+						return Utils.TextUtils.Localize(key4, uIMapper8?.EraFullName ?? Utils.DataUtils.GetLocalizedTitle(eraDefinition.Name), Utils.DataUtils.GetLocalizedTitle(factionDefinition2.Name), Cognomen.GetLongMajorEmpireName(notif.Data.OtherEmpireIndex));// Utils.DataUtils.GetLocalizedTitle(factionDefinition2.Name), Utils.DataUtils.GetLocalizedTitle(factionDefinition.Name));
+					});
+				}
+			}
+		}
 	}
 }
