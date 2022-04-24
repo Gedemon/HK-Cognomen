@@ -6,6 +6,7 @@
 
 using Amplitude;
 using Amplitude.Framework;
+using Amplitude.Framework.Localization;
 using Amplitude.Framework.Options;
 using Amplitude.Mercury.Avatar;
 using Amplitude.Mercury.Data.GameOptions;
@@ -62,7 +63,7 @@ namespace SeelingCat.Cognomen
 
 		public const string pluginGuid = "seelingcat.humankind.cognomen";
 		public const string pluginName = "Cognomen";
-		public const string pluginVersion = "1.0.0.4";
+		public const string pluginVersion = "1.0.0.5";
 
 		void Awake()
 		{
@@ -152,9 +153,9 @@ namespace SeelingCat.Cognomen
 		[HarmonyPatch(typeof(Amplitude.Mercury.UI.Helpers.GameUtils))]
 		public class GameUtils_Patch
 		{
-			[HarmonyPatch("GetEmpireName")]
+			[HarmonyPatch("GetEmpireNameParameter")]
 			[HarmonyPrefix]
-			public static bool GetEmpireName(Amplitude.Mercury.UI.Helpers.GameUtils __instance, ref string __result, int empireIndex, EmpireColor useColor = EmpireColor.Tertiary, bool isEmpireNameOnTransparentBackground = false, bool isAnonymous = false)
+			public static bool GetEmpireNameParameter(Amplitude.Mercury.UI.Helpers.GameUtils __instance, ref LocalizedStringParameter __result, int empireIndex, EmpireColor useColor = EmpireColor.Tertiary, bool isEmpireNameOnTransparentBackground = false, bool isAnonymous = false)
 			{
 				// As I understand it, snapshot is a cache to get things faster
 				// line below is equivalent of "if isAnonymous then empireNameInfo = AnonymousInfo else empireNameInfo = EmpireNamePerIndex"
@@ -177,74 +178,18 @@ namespace SeelingCat.Cognomen
 				{
 					string symbolIcon = empireNameInfo.SymbolIcon;
 					string text = ((isLocalEmpire || flag) ? empireName : __instance.DataUtils.GetLocalizedTitle(__instance.FactionUnknown));
-					__result = "<c=" + color + ">[SquircleBackground]</c>" + symbolIcon + " " + text;
+					__result = new LocalizedStringParameter { StringValue = "<c=" + color + ">[SquircleBackground]</c>" + symbolIcon + " " + text }; //"<c=" + color + ">[SquircleBackground]</c>" + symbolIcon + " " + text;
 					return false;
 				}
 
 				if (!isAnonymous)
 				{
-					__result = color == string.Empty ? empireName : Amplitude.Mercury.Sandbox.Sandbox.EmpireNamesRepository.GetColorizedName(empireName, color);
+					__result = __result = color == string.Empty ? new LocalizedStringParameter { StringValue = empireName } : new LocalizedStringParameter { StringValue = Amplitude.Mercury.Sandbox.Sandbox.EmpireNamesRepository.GetColorizedName(empireName, color) }; //color == string.Empty ? empireName : Amplitude.Mercury.Sandbox.Sandbox.EmpireNamesRepository.GetColorizedName(empireName, color);
 					return false;
 				}
 
-				__result = Snapshots.EmpireNameSnapshot.PresentationData.GetAnonymousName(useColor);
+				__result = Snapshots.EmpireNameSnapshot.PresentationData.GetAnonymousNameParameter(useColor);
 				return false;
-
-				// below is the original function for reference
-				// it's in the GameUtils class in \Amplitude.Mercury.Firstpass\Amplitude\Mercury\UI\Helpers\GameUtils.cs
-				// there it can call directly other methods from that class in the code like "IsMajorEmpire"
-				// same for properties/fields of the class (see C# documentation)
-				/*
-				public string GetEmpireName(int empireIndex, EmpireColor useColor = EmpireColor.Tertiary, bool isEmpireNameOnTransparentBackground = false, bool isAnonymous = false)
-				{
-					if (isEmpireNameOnTransparentBackground)
-					{
-						ref EmpireNameInfo reference = ref isAnonymous ? ref Snapshots.EmpireNameSnapshot.PresentationData.AnonymousInfo : ref Snapshots.EmpireNameSnapshot.PresentationData.EmpireNamePerIndex[empireIndex];
-						bool num = empireIndex == Snapshots.GameSnapshot.PresentationData.LocalEmpireInfo.EmpireIndex;
-						bool flag = !IsMajorEmpire(empireIndex) || IsMajorEmpireKnownByLocalEmpire(empireIndex);
-						string text = reference.ColorStringPerEmpireColorIndex[(int)useColor];
-						string symbolIcon = reference.SymbolIcon;
-						string text2 = ((num || flag) ? reference.EmpireRoughName : DataUtils.GetLocalizedTitle(FactionUnknown));
-						return "<c=" + text + ">[SquircleBackground]</c>" + symbolIcon + " " + text2;
-					}
-					if (!isAnonymous)
-					{
-						return Snapshots.EmpireNameSnapshot.PresentationData.GetEmpireName(empireIndex, useColor);
-					}
-					return Snapshots.EmpireNameSnapshot.PresentationData.GetAnonymousName(useColor);
-				}
-
-				//*/
-
-				// if we wanted to just change a line or two of the original method, here is how it would look for harmony patching
-				// as we're not in the original method context, we use the instance to call other methods from the GameUtils class for example "IsMajorEmpire" become "__instance.IsMajorEmpire"
-				// most properties/field/methods are "private" and could not be accessed directly like that if we hadn't "publicized" them
-				// we'd had to use "reflection" to access those then, which use a different syntax I'm not comfortable with
-
-				/*
-				public static bool GetEmpireName(Amplitude.Mercury.UI.Helpers.GameUtils __instance, ref string __result, int empireIndex, EmpireColor useColor = EmpireColor.Tertiary, bool isEmpireNameOnTransparentBackground = false, bool isAnonymous = false)
-				{
-					if (isEmpireNameOnTransparentBackground)
-					{
-						ref EmpireNameInfo reference = ref isAnonymous ? ref Snapshots.EmpireNameSnapshot.PresentationData.AnonymousInfo : ref Snapshots.EmpireNameSnapshot.PresentationData.EmpireNamePerIndex[empireIndex];
-						bool num = empireIndex == Snapshots.GameSnapshot.PresentationData.LocalEmpireInfo.EmpireIndex;
-						bool flag = !__instance.IsMajorEmpire(empireIndex) || __instance.IsMajorEmpireKnownByLocalEmpire(empireIndex);
-						string text = reference.ColorStringPerEmpireColorIndex[(int)useColor];
-						string symbolIcon = reference.SymbolIcon;
-						string text2 = ((num || flag) ? reference.EmpireRoughName : __instance.DataUtils.GetLocalizedTitle(__instance.FactionUnknown));
-						_result = "<c=" + text + ">[SquircleBackground]</c>" + symbolIcon + " " + text2;
-						return false;
-					}
-					if (!isAnonymous)
-					{
-						_result = Snapshots.EmpireNameSnapshot.PresentationData.GetEmpireName(empireIndex, useColor);
-						return false;
-					}
-					_result = Snapshots.EmpireNameSnapshot.PresentationData.GetAnonymousName(useColor);
-					return false;
-				}
-				//*/
-
 			}
 		}
 
@@ -328,10 +273,10 @@ namespace SeelingCat.Cognomen
 
 			// After the game's update an Empire name, we also try to update the custom names
 			//
-			[HarmonyPatch("SetEmpireName")]
+			[HarmonyPatch("RefreshEmpireName")]
 			[HarmonyPostfix]
-			public static void SetEmpireName(EmpireNamesRepository __instance, ref EmpireNameInfo empireNameInfo, Empire empire, bool forceUpdate = false)
-			{
+			public static void RefreshEmpireName(EmpireNamesRepository __instance, ref EmpireNameInfo empireNameInfo, Empire empire, bool forceUpdate = false)
+			{				
 				SetCustomEmpireNames(empireNameInfo, empire.Index);
 			}
 			//
@@ -841,7 +786,7 @@ namespace SeelingCat.Cognomen
 					// here is an example of using Amplitude's logging to the html files in the "\Documents\Humankind\Temporary Files" folder
 					// I'm using it a lot to explore the content of the various object and what I can use.
 
-					Diagnostics.LogError($"[SeelingCat] Custom naming for {empireName} (index = {empireIndex})"); // LogError text are Red, I use them to ID a section of my logs when quickly scrolling the (long) diagnostic file
+					//Diagnostics.LogError($"[SeelingCat] Custom naming for {empireName} (index = {empireIndex})"); // LogError text are Red, I use them to ID a section of my logs when quickly scrolling the (long) diagnostic file
 
 					// creating a new instance of the EmpireGovernement class to input civics and Axis data
 					EmpireGovernement gov = new EmpireGovernement();
@@ -859,91 +804,91 @@ namespace SeelingCat.Cognomen
 								// Founding Myths
 								case "Civics_Government01_Choice01": // Natural Right
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - NaturalRight : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - NaturalRight : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.NaturalRight = true;
 										break;
 									}
 								case "Civics_Government01_Choice02": // Divine Mandate
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - DivineMandate : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - DivineMandate : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DivineMandate = true;
 										break;
 									}
 								// Leadership
 								case "Civics_Government02_Choice01": // Small Council
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - SmallCouncil : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - SmallCouncil : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.SmallCouncil = true;
 										break;
 									}
 								case "Civics_Government02_Choice02": // Autarchy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Autarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Autarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Autarchy = true;
 										break;
 									}
 								//Political Entitlement
 								case "Civics_Government03_Choice01": // Aristocracy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Aristocracy = true;
 										break;
 									}
 								case "Civics_Government03_Choice02": // Republic
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Republic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Republic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Republic = true;
 										break;
 									}
 								// Political Influence
 								case "Civics_Government04_Choice01": // Monarchy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Monarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Monarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Monarchy = true;
 										break;
 									}
 								case "Civics_Government04_Choice02": // Aristocracy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Aristocracy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Aristocracy = true;
 										break;
 									}
 								// Monarchy Power
 								case "Civics_Government05_Choice01": // Absolute Monarchy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - AbsoluteMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - AbsoluteMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.AbsoluteMonarchy = true;
 										break;
 									}
 								case "Civics_Government05_Choice02": // Constitutional Monarchy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - ConstitutionalMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - ConstitutionalMonarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.ConstitutionalMonarchy = true;
 										break;
 									}
 								// Republic Evolution
 								case "Civics_Government06_Choice01": // One-Party State
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - OnePartyState : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - OnePartyState : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.OnePartyState = true;
 										break;
 									}
 								case "Civics_Government06_Choice02": // Democratic Republic
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DemocraticRepublic = true;
 										break;
 									}
 								// Aristocracy Evolution
 								case "Civics_Government07_Choice01": // Oligarchy
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - Oligarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - Oligarchy : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.Oligarchy = true;
 										break;
 									}
 								case "Civics_Government07_Choice02": // Democratic Republic
 									{
-										Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
+										//Diagnostics.LogWarning($"[SeelingCat] - DemocraticRepublic : Civic {civic.CivicDefinition.Name}, ActiveChoiceName = {civic.ActiveChoiceName}");
 										gov.DemocraticRepublic = true;
 										break;
 									}
@@ -955,7 +900,7 @@ namespace SeelingCat.Cognomen
 					for (int a = 0; a < numAxis; a++)
                     {
 						IdeologicalAxis axis = majorEmpire.DepartmentOfDevelopment.IdeologicalAxes[a];
-						Diagnostics.LogWarning($"[SeelingCat] - Axis {axis.AxisName}, Value = {axis.Value}, BaseValue = {axis.BaseValue}, SectionIndex = {axis.SectionIndex},  Orientation = {axis.OrientationName}, OrientationIndex = {axis.OrientationIndex}");
+						//Diagnostics.LogWarning($"[SeelingCat] - Axis {axis.AxisName}, Value = {axis.Value}, BaseValue = {axis.BaseValue}, SectionIndex = {axis.SectionIndex},  Orientation = {axis.OrientationName}, OrientationIndex = {axis.OrientationIndex}");
 
 						int level = System.Math.Abs(axis.Value); 
 
@@ -1026,7 +971,7 @@ namespace SeelingCat.Cognomen
 					FixedPoint numTerritories = majorEmpire.TerritoryCount.Value;
 					int empireEraIndex = majorEmpire.DepartmentOfDevelopment.CurrentEraIndex;
 
-					Diagnostics.LogWarning($"[SeelingCat] Quantify Empire Size (numTerritories = {numTerritories}, eraIndex = {empireEraIndex})");
+					//Diagnostics.LogWarning($"[SeelingCat] Quantify Empire Size (numTerritories = {numTerritories}, eraIndex = {empireEraIndex})");
 
 					if (TerritorySizeByEraIndex.TryGetValue(empireEraIndex, out TerritorySize territorySize)) // TryGetValue is an useful method of dictionaries, check if a key exist and return the corresponding value in an out parameter
 					{
@@ -1037,18 +982,18 @@ namespace SeelingCat.Cognomen
 
 					// Trying to get the Avatar gender...
 					IAvatarService avatarService = Services.GetService<IAvatarService>();
-					avatarService.TryGetGender(majorEmpire.AvatarSummary, out Gender gender);
+					avatarService.TryGetGender(ref majorEmpire.AvatarSummary, out Gender gender);
 
 					// Preparing to get the Avatar title
 					//
-					Diagnostics.LogWarning($"[SeelingCat] preparing {gender} Avatar full name...");
+					//Diagnostics.LogWarning($"[SeelingCat] preparing {gender} Avatar full name...");
 
 					// We get the user name for humans or the avatar name for AI
 					string personaName = (majorEmpire.IsControlledByHuman ? majorEmpire.PlayerIdentifier.UserName : majorEmpire.PersonaName);
 
 					// Preparing the Empire Full and long names
 					//
-					Diagnostics.LogWarning($"[SeelingCat] preparing the Empire Full and long names for {majorEmpire.FactionDefinition.Name}");
+					//Diagnostics.LogWarning($"[SeelingCat] preparing the Empire Full and long names for {majorEmpire.FactionDefinition.Name}");
 
 					// The UIMapper has the value from the DB, including the adjective not used in the base game 
 					FactionUIMapper empireUIMapper = Utils.DataUtils.GetUIMapper<FactionUIMapper>(majorEmpire.FactionDefinition.Name);
@@ -1065,7 +1010,7 @@ namespace SeelingCat.Cognomen
 
 					// We've filled the EmpireGovernement class with data earlier, we now use it to generate the names
 					//
-					Diagnostics.LogWarning($"[SeelingCat] generating names for empireAdjective = {empireAdjective}/{empireUIMapper.Adjective}, empireSize = {empireSize}, personaName = {personaName}, gender = {gender}");
+					//Diagnostics.LogWarning($"[SeelingCat] generating names for empireAdjective = {empireAdjective}/{empireUIMapper.Adjective}, empireSize = {empireSize}, personaName = {personaName}, gender = {gender}");
 					gov.GenerateNames(empireAdjective, empireSize, personaName, gender);
 
 					// Assigning the generated names
@@ -1079,7 +1024,7 @@ namespace SeelingCat.Cognomen
 						MajorEmpire liegeEmpire = majorEmpire.Liege.Entity;
 						FactionUIMapper liegeUIMapper = Utils.DataUtils.GetUIMapper<FactionUIMapper>(liegeEmpire.FactionDefinition.Name);
 
-						Diagnostics.LogWarning($"[SeelingCat] - Is vassal of {liegeEmpire.FactionDefinition.Name}, Era = {liegeEmpire.DepartmentOfDevelopment.CurrentEraIndex}");
+						//Diagnostics.LogWarning($"[SeelingCat] - Is vassal of {liegeEmpire.FactionDefinition.Name}, Era = {liegeEmpire.DepartmentOfDevelopment.CurrentEraIndex}");
 
 						switch (liegeEmpire.DepartmentOfDevelopment.CurrentEraIndex)
 						{
@@ -1170,7 +1115,7 @@ namespace SeelingCat.Cognomen
                             }
 					}
 
-					Diagnostics.LogWarning($"[SeelingCat] fullEmpireName = {fullEmpireName}, longEmpireName = {longEmpireName}, fullAvatarName = {fullAvatarName}");
+					//Diagnostics.LogWarning($"[SeelingCat] fullEmpireName = {fullEmpireName}, longEmpireName = {longEmpireName}, fullAvatarName = {fullAvatarName}");
 				}
 			}
             else
@@ -1260,7 +1205,7 @@ namespace SeelingCat.Cognomen
 
 				if (cfg.NotificationDataType == typeof(OtherFactionEvolutionNotification))
 				{
-					Diagnostics.LogError($"[SeelingCat] Replacing <GetDescription> in NotificationsController.AllConfigs for OtherFactionEvolutionNotification");
+					Diagnostics.LogWarning($"[SeelingCat] Replacing <GetDescription> in NotificationsController.AllConfigs for OtherFactionEvolutionNotification");
 
 					cfg.GetDescription = NotificationDataConfig.Forge(delegate (Notification<OtherFactionEvolutionNotification> notif, NotificationContext context)
 					{
